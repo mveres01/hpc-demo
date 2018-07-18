@@ -1,9 +1,11 @@
+import os
 import time
 import argparse
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
+import numpy as np
 import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
@@ -11,8 +13,9 @@ import matplotlib.pyplot as plt
 from tqdm import tqdm
 from torchvision import datasets, transforms
 
+
 class Network(nn.Module):
-    
+
     def __init__(self):
         super(Network, self).__init__()
 
@@ -25,52 +28,58 @@ class Network(nn.Module):
             nn.Conv2d(10, 10, kernel_size=3, padding=1),
             nn.MaxPool2d(2),
             nn.ReLU())
-            
+
         self.fc1 = nn.Linear(10 * 6 * 6, 64)
         self.fc2 = nn.Linear(64, 64)
         self.fc3 = nn.Linear(64, 10)
 
     def forward(self, input):
-    
+
         out = self.net(input)
         out = out.view(out.size(0), -1)
         out = F.relu(self.fc1(out))
         out = F.relu(self.fc2(out))
         out = self.fc3(out)
-        
+
         return out
 
 
-def view_predictions(images, predictions, num_plot=8):
+def view_predictions(images, predictions, num_plot=6, save_name=None):
 
     if images.shape[0] < num_plot ** 2:
         return
 
-    for i in range(num_plot):
-    
-        for j in range(num_plot):
+    fig = plt.figure(figsize=(6, 7))
+    for i in range(num_plot ** 2):
 
-            idx = i * num_plot + j
+        im = images[i, 0]
 
-            plt.subplot(num_plot, num_plot, idx + 1)
-            plt.imshow(images[idx])
-            plt.axis('off')
-    plt.show()
+        plt.subplot(num_plot, num_plot, i + 1)
+        plt.imshow(im, cmap='gray', aspect='auto')
+        plt.axis('off')
+        plt.title('%s' % predictions[i, 0])
+
+    fig.subplots_adjust(hspace=0.4)
+
+    if save_name is not None:
+        plt.savefig(save_name, bbox_inches='tight')
 
 
 def main():
+
+    save_dir = 'images'
+    if not os.path.exists(save_dir):
+        os.makedirs(save_dir)
 
     parser = argparse.ArgumentParser()
     parser.add_argument('--use-cuda', action='store_true', default=False)
     parser.add_argument('--epochs', dest='num_epochs', default=10, type=int)
     parser.add_argument('--lrate', dest='lrate', default=1e-2, type=float)
     parser.add_argument('--batch', dest='batch_size', default=128, type=int)
-
     kwargs = vars(parser.parse_args())
 
     use_cuda = kwargs['use_cuda'] and torch.cuda.is_available()
     device = torch.device('cuda' if use_cuda else 'cpu')
-
 
     train_data = datasets.MNIST('data', train=True, download=True,
                                 transform=transforms.ToTensor())
@@ -103,6 +112,8 @@ def main():
             optimizer.step()
 
         total = 0.
+        first = False
+
         for batch in tqdm(test_loader, 'Testing ', leave=False):
 
             image, label = batch
@@ -111,13 +122,19 @@ def main():
 
             output = model(image)
             _, pred = output.max(1, keepdim=True)
-   
-            correct = pred.eq(label.view_as(pred)).cpu().numpy().detach()
 
-          
+            if first is False:
+                first = True
+                save_name = os.path.join(save_dir, 'epoch%d.jpg' % epoch)
+                view_predictions(image.cpu().data.numpy(),
+                                 pred.cpu().data.numpy(),
+                                 num_plot=6, save_name=save_name)
+
+            correct = pred.eq(label.view_as(pred)).cpu().detach()
+
             total += correct.sum()
 
-        print('Epoch %d accuracy: %2.4f, took: %2.4fs'%\
+        print('Epoch %d accuracy: %2.4f, took: %2.4fs' %
               (epoch, float(total) / float(len(test_data)), time.time() - start))
 
 
