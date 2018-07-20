@@ -91,7 +91,7 @@ def main():
     parser.add_argument('--momentum', default=0.1, type=float)
     parser.add_argument('--batch', dest='batch_size', default=128, type=int)
     parser.add_argument('--no-progress', action='store_true', default=False)
-    parser.add_argument('--optimizer', default='sgd')
+    parser.add_argument('--optimizer', default='adam')
     kwargs = vars(parser.parse_args())
 
     np.random.seed(kwargs['seed'])
@@ -166,7 +166,7 @@ def main():
                                  pred.cpu().data.numpy(),
                                  num_plot=10, save_name=save_name)
 
-            correct += pred.eq(label.view_as(pred)).cpu().detach().sum()
+            total += pred.eq(label.view_as(pred)).cpu().detach().sum()
 
         print('Epoch %d accuracy: %2.4f, took: %2.4fs' %
               (epoch, float(total) / float(len(test_data)), time.time() - start))
