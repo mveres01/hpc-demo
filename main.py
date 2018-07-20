@@ -143,6 +143,7 @@ def main():
             loss.backward()
             optimizer.step()
 
+        correct = 0.
         first = False
         total = 0.
 
