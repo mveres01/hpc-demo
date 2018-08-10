@@ -54,12 +54,12 @@ class Network(nn.Module):
 
         self.net = nn.Sequential(
             nn.Conv2d(1, 10, kernel_size=3, padding=0),
-			nn.ReLU(),
+            nn.ReLU(),
             nn.Conv2d(10, 10, kernel_size=3, padding=1),
             nn.MaxPool2d(2),
             nn.ReLU(),
             nn.Conv2d(10, 10, kernel_size=3, padding=1),
-			nn.ReLU(),
+            nn.ReLU(),
             nn.Conv2d(10, 10, kernel_size=3, padding=1),
             nn.MaxPool2d(2),
             nn.ReLU())
